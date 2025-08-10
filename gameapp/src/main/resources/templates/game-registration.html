@@ -1,0 +1,313 @@
+
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Registration</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body>
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-8 offset-md-2">
+                <h1 class="mb-4" id="pageTitle">New Game Registration</h1>
+                
+                <div class="card">
+                    <div class="card-body">
+                        <form id="gameForm">
+                            <!-- Game ID -->
+                            <div class="mb-3">
+                                <label for="gameId" class="form-label">Game ID *</label>
+                                <input type="text" class="form-control" id="gameId" required 
+                                       placeholder="e.g., UNCHARTED4">
+                            </div>
+
+                            <!-- Category -->
+                            <div class="mb-3">
+                                <label for="category" class="form-label">Category *</label>
+                                <select class="form-select" id="category" required title="Select Category" aria-label="Select Category">
+                                    <option value="">Select Category</option>
+                                    <option value="ACTION">Action</option>
+                                    <option value="ADVENTURE">Adventure</option>
+                                    <option value="PUZZLE">Puzzle</option>
+                                    <option value="RPG">RPG</option>
+                                </select>
+                            </div>
+
+                            <!-- Game Names -->
+                            <div class="mb-3">
+                                <label class="form-label">Game Names *</label>
+                                <div id="nameContainer">
+                                    <!-- Default English name -->
+                                    <div class="name-entry mb-2">
+                                        <div class="row">
+                                            <div class="col-md-3">
+                                                <select class="form-select language-select" required title="Select Language" aria-label="Select Language">
+                                                    <option value="EN" selected>English (EN)</option>
+                                                    <option value="KO">Korean (KO)</option>
+                                                    <option value="JA">Japanese (JA)</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-7">
+                                                <input type="text" class="form-control name-value" 
+                                                       placeholder="Game name" required>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <button type="button" class="btn btn-outline-danger remove-name" 
+                                                        onclick="removeName(this)">Remove</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-outline-primary" onclick="addName()">
+                                    + Add Language
+                                </button>
+                            </div>
+
+                            <!-- Default Language -->
+                            <div class="mb-3">
+                                <label for="defaultLanguage" class="form-label">Default Language</label>
+                                <select class="form-select" id="defaultLanguage" title="Select Default Language" aria-label="Select Default Language">
+                                    <option value="EN">English (EN)</option>
+                                    <option value="KO">Korean (KO)</option>
+                                    <option value="JA">Japanese (JA)</option>
+                                </select>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                <button type="button" class="btn btn-secondary" onclick="location.href='/games'">
+                                    Cancel
+                                </button>
+                                <button type="submit" class="btn btn-primary" id="submitBtn">
+                                    Save Game
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isEditMode = false;
+        let editingGameId = null;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if we're in edit mode
+            const path = window.location.pathname;
+            if (path.includes('/edit/')) {
+                isEditMode = true;
+                editingGameId = path.split('/').pop();
+                document.getElementById('pageTitle').textContent = 'Edit Game';
+                document.getElementById('submitBtn').textContent = 'Update Game';
+                document.getElementById('gameId').readOnly = true;
+                loadGameForEdit(editingGameId);
+            }
+
+            // Form submission
+            document.getElementById('gameForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                saveGame();
+            });
+
+            // Update language options when a language is selected
+            document.addEventListener('change', function(e) {
+                if (e.target.classList.contains('language-select')) {
+                    updateLanguageOptions();
+                }
+            });
+        });
+
+        async function loadGameForEdit(gameId) {
+            try {
+                const response = await axios.get(`/api/games/${gameId}`);
+                const game = response.data;
+
+                document.getElementById('gameId').value = game.id;
+                document.getElementById('category').value = game.category;
+
+                // Clear existing names and add the loaded ones
+                const container = document.getElementById('nameContainer');
+                container.innerHTML = '';
+
+                game.names.forEach((name, index) => {
+                    addName();
+                    const entries = container.querySelectorAll('.name-entry');
+                    const lastEntry = entries[entries.length - 1];
+                    lastEntry.querySelector('.language-select').value = name.language;
+                    lastEntry.querySelector('.name-value').value = name.value;
+                });
+
+                updateLanguageOptions();
+            } catch (error) {
+                console.error('Error loading game:', error);
+                alert('Error loading game data. Please try again.');
+            }
+        }
+
+        function addName() {
+            const container = document.getElementById('nameContainer');
+            const nameEntry = document.createElement('div');
+            nameEntry.className = 'name-entry mb-2';
+            nameEntry.innerHTML = `
+                <div class="row">
+                    <div class="col-md-3">
+                        <select class="form-select language-select" required title="Select Language" aria-label="Select Language">
+                            <option value="">Select Language</option>
+                            <option value="EN">English (EN)</option>
+                            <option value="KO">Korean (KO)</option>
+                            <option value="JA">Japanese (JA)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-7">
+                        <input type="text" class="form-control name-value" 
+                               placeholder="Game name" required>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="button" class="btn btn-outline-danger remove-name" 
+                                onclick="removeName(this)">Remove</button>
+                    </div>
+                </div>
+            `;
+            container.appendChild(nameEntry);
+            updateLanguageOptions();
+        }
+
+        function removeName(button) {
+            const nameEntries = document.querySelectorAll('.name-entry');
+            if (nameEntries.length > 1) {
+                button.closest('.name-entry').remove();
+                updateLanguageOptions();
+            } else {
+                alert('At least one language name is required.');
+            }
+        }
+
+        function updateLanguageOptions() {
+            const selectedLanguages = Array.from(document.querySelectorAll('.language-select'))
+                .map(select => select.value)
+                .filter(value => value !== '');
+
+            document.querySelectorAll('.language-select').forEach(select => {
+                const currentValue = select.value;
+                const options = select.querySelectorAll('option');
+                
+                options.forEach(option => {
+                    if (option.value === '') return; // Skip empty option
+                    
+                    if (selectedLanguages.includes(option.value) && option.value !== currentValue) {
+                        option.disabled = true;
+                    } else {
+                        option.disabled = false;
+                    }
+                });
+            });
+        }
+
+        async function saveGame() {
+            try {
+                // Validate form
+                if (!validateForm()) {
+                    return;
+                }
+
+                const gameData = {
+                    id: document.getElementById('gameId').value.trim(),
+                    category: document.getElementById('category').value,
+                    names: []
+                };
+
+                // Collect all name entries
+                const nameEntries = document.querySelectorAll('.name-entry');
+                nameEntries.forEach(entry => {
+                    const language = entry.querySelector('.language-select').value;
+                    const value = entry.querySelector('.name-value').value.trim();
+                    
+                    if (language && value) {
+                        gameData.names.push({
+                            language: language,
+                            value: value
+                        });
+                    }
+                });
+
+                let response;
+                if (isEditMode) {
+                    response = await axios.put(`/api/games/${editingGameId}`, gameData);
+                } else {
+                    response = await axios.post('/api/games', gameData);
+                }
+
+                alert(`Game ${isEditMode ? 'updated' : 'created'} successfully!`);
+                location.href = '/games';
+            } catch (error) {
+                console.error('Error saving game:', error);
+                if (error.response && error.response.data) {
+                    alert(`Error: ${error.response.data.message || 'Please check your input and try again.'}`);
+                } else {
+                    alert('Error saving game. Please try again.');
+                }
+            }
+        }
+
+        function validateForm() {
+            const gameId = document.getElementById('gameId').value.trim();
+            const category = document.getElementById('category').value;
+            const nameEntries = document.querySelectorAll('.name-entry');
+
+            if (!gameId) {
+                alert('Game ID is required.');
+                return false;
+            }
+
+            if (!category) {
+                alert('Category is required.');
+                return false;
+            }
+
+            if (nameEntries.length === 0) {
+                alert('At least one game name is required.');
+                return false;
+            }
+
+            // Check if all name entries are valid
+            let hasValidName = false;
+            for (const entry of nameEntries) {
+                const language = entry.querySelector('.language-select').value;
+                const value = entry.querySelector('.name-value').value.trim();
+                
+                if (language && value) {
+                    hasValidName = true;
+                    break;
+                }
+            }
+
+            if (!hasValidName) {
+                alert('At least one complete game name (language and value) is required.');
+                return false;
+            }
+
+            // Check for duplicate languages
+            const languages = [];
+            for (const entry of nameEntries) {
+                const language = entry.querySelector('.language-select').value;
+                const value = entry.querySelector('.name-value').value.trim();
+                
+                if (language && value) {
+                    if (languages.includes(language)) {
+                        alert('Duplicate languages are not allowed.');
+                        return false;
+                    }
+                    languages.push(language);
+                }
+            }
+
+            return true;
+        }
+    </script>
+</body>
+</html>

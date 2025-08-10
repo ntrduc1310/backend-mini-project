@@ -1,0 +1,24 @@
+# Build outputs
+/target/
+
+# IDE/editor
+/.idea/
+*.iml
+/.project
+/.classpath
+/.settings/
+/.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Java
+bin/
+out/
+
+# Old resources folder (use templates/ instead)
+src/main/resources/template/

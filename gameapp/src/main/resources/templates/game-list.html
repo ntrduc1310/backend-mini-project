@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Management System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body>
+    <div class="container mt-4">
+        <h1 class="mb-4">Game Management System</h1>
+        
+        <!-- Search and Filter -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <label for="categoryFilter" class="form-label visually-hidden">Filter by Category</label>
+                <select id="categoryFilter" class="form-select" title="Filter by Category" aria-label="Filter by Category">
+                    <option value="">All Categories</option>
+                    <option value="ACTION">Action</option>
+                    <option value="ADVENTURE">Adventure</option>
+                    <option value="PUZZLE">Puzzle</option>
+                    <option value="RPG">RPG</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label for="keywordSearch" class="form-label visually-hidden">Search by game name</label>
+                <input type="text" id="keywordSearch" class="form-control" placeholder="Search by game name..." title="Search by game name" aria-label="Search by game name">
+            </div>
+            <div class="col-md-2">
+                <button id="searchBtn" class="btn btn-primary w-100">Search</button>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="row mb-3">
+            <div class="col">
+                <button id="newGameBtn" class="btn btn-success" onclick="location.href='/games/new'">
+                    + New Game
+                </button>
+                <button id="deleteSelectedBtn" class="btn btn-danger ms-2" onclick="deleteSelected()">
+                    Delete Selected
+                </button>
+            </div>
+        </div>
+
+        <!-- Game Table -->
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>
+                            <label for="selectAll" class="form-label visually-hidden">Select All Games</label>
+                            <input type="checkbox" id="selectAll" title="Select All Games" aria-label="Select All Games">
+                        </th>
+                        <th>Game ID</th>
+                        <th>Category</th>
+                        <th>Names</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="gameTableBody">
+                    <!-- Games will be loaded here -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        <nav aria-label="Game pagination">
+            <ul class="pagination justify-content-center" id="pagination">
+                <!-- Pagination will be loaded here -->
+            </ul>
+        </nav>
+    </div>
+
+    <script>
+        let currentPage = 0;
+        let currentSize = 10;
+
+        // Load games on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadGames();
+            
+            // Search functionality
+            document.getElementById('searchBtn').addEventListener('click', function() {
+                currentPage = 0;
+                loadGames();
+            });
+
+            // Enter key search
+            document.getElementById('keywordSearch').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    currentPage = 0;
+                    loadGames();
+                }
+            });
+
+            // Select all checkbox
+            document.getElementById('selectAll').addEventListener('change', function() {
+                const checkboxes = document.querySelectorAll('input[name="gameSelect"]');
+                checkboxes.forEach(cb => cb.checked = this.checked);
+            });
+        });
+
+        async function loadGames() {
+            try {
+                const category = document.getElementById('categoryFilter').value;
+                const keyword = document.getElementById('keywordSearch').value;
+                
+                let url = `/api/games?page=${currentPage}&size=${currentSize}`;
+                if (category) url += `&category=${category}`;
+                if (keyword) url += `&keyword=${keyword}`;
+
+                const response = await axios.get(url);
+                const data = response.data;
+
+                renderGames(data.content);
+                renderPagination(data);
+            } catch (error) {
+                console.error('Error loading games:', error);
+                alert('Error loading games. Please try again.');
+            }
+        }
+
+        function renderGames(games) {
+            const tbody = document.getElementById('gameTableBody');
+            tbody.innerHTML = '';
+
+            games.forEach(game => {
+                const row = document.createElement('tr');
+                
+                const names = game.names.map(name => `${name.language}: ${name.value}`).join('<br>');
+                
+                row.innerHTML = `
+                    <td><input type="checkbox" name="gameSelect" value="${game.id}"></td>
+                    <td>${game.id}</td>
+                    <td>${game.category}</td>
+                    <td>${names}</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="editGame('${game.id}')">Edit</button>
+                        <button class="btn btn-sm btn-danger ms-1" onclick="deleteGame('${game.id}')">Delete</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function renderPagination(pageData) {
+            const pagination = document.getElementById('pagination');
+            pagination.innerHTML = '';
+
+            // Previous button
+            const prevItem = document.createElement('li');
+            prevItem.className = `page-item ${pageData.first ? 'disabled' : ''}`;
+            prevItem.innerHTML = `<a class="page-link" href="#" onclick="changePage(${currentPage - 1})">Previous</a>`;
+            pagination.appendChild(prevItem);
+
+            // Page numbers
+            for (let i = 0; i < pageData.totalPages; i++) {
+                const pageItem = document.createElement('li');
+                pageItem.className = `page-item ${i === currentPage ? 'active' : ''}`;
+                pageItem.innerHTML = `<a class="page-link" href="#" onclick="changePage(${i})">${i + 1}</a>`;
+                pagination.appendChild(pageItem);
+            }
+
+            // Next button
+            const nextItem = document.createElement('li');
+            nextItem.className = `page-item ${pageData.last ? 'disabled' : ''}`;
+            nextItem.innerHTML = `<a class="page-link" href="#" onclick="changePage(${currentPage + 1})">Next</a>`;
+            pagination.appendChild(nextItem);
+        }
+
+        function changePage(page) {
+            if (page >= 0) {
+                currentPage = page;
+                loadGames();
+            }
+        }
+
+        function editGame(id) {
+            location.href = `/games/edit/${id}`;
+        }
+
+        async function deleteGame(id) {
+            if (confirm('Are you sure you want to delete this game?')) {
+                try {
+                    await axios.delete('/api/games', { data: [id] });
+                    loadGames();
+                    alert('Game deleted successfully!');
+                } catch (error) {
+                    console.error('Error deleting game:', error);
+                    alert('Error deleting game. Please try again.');
+                }
+            }
+        }
+
+        async function deleteSelected() {
+            const selected = Array.from(document.querySelectorAll('input[name="gameSelect"]:checked'))
+                .map(cb => cb.value);
+            
+            if (selected.length === 0) {
+                alert('Please select games to delete.');
+                return;
+            }
+
+            if (confirm(`Are you sure you want to delete ${selected.length} game(s)?`)) {
+                try {
+                    await axios.delete('/api/games', { data: selected });
+                    loadGames();
+                    document.getElementById('selectAll').checked = false;
+                    alert('Games deleted successfully!');
+                } catch (error) {
+                    console.error('Error deleting games:', error);
+                    alert('Error deleting games. Please try again.');
+                }
+            }
+        }
+    </script>
+</body>
+</html>

@@ -15,7 +15,7 @@ public class WebController {
     public String gameList() {
         return "game-list";
     }
-
+        
     @GetMapping("/games/new")
     public String gameRegistration() {
         return "game-registration";

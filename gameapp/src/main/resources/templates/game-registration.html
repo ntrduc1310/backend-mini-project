@@ -124,7 +124,7 @@
 
         async function loadGameForEdit(gameId) {
             try {
-                const response = await axios.get(`/api/games/${gameId}`);
+                const response = await axios.get(`/api/v1/games/${gameId}`);
                 const game = response.data;
 
                 document.getElementById('gameId').value = game.id;
@@ -237,9 +237,9 @@
 
                 let response;
                 if (isEditMode) {
-                    response = await axios.put(`/api/games/${editingGameId}`, gameData);
+                    response = await axios.put(`/api/v1/games/${editingGameId}`, gameData);
                 } else {
-                    response = await axios.post('/api/games', gameData);
+                    response = await axios.post('/api/v1/games', gameData);
                 }
 
                 alert(`Game ${isEditMode ? 'updated' : 'created'} successfully!`);

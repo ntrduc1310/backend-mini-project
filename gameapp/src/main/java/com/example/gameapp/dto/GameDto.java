@@ -2,8 +2,10 @@ package com.example.gameapp.dto;
 
 import java.util.List;
 
+import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
 
 import com.example.gameapp.model.Category;
 
@@ -15,6 +17,8 @@ public class GameDto {
     private Category category;
 
     @NotNull
+    @Size(min = 1, message = "At least one name is required")
+    @Valid
     private List<GameNameDto> names;
 
     // Getters & Setters

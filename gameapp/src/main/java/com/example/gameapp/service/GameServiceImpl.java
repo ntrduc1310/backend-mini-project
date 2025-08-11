@@ -39,6 +39,9 @@ public class GameServiceImpl implements GameService {
     @Override
     public GameDto saveOrUpdate(GameDto dto) {
         Game g = mapper.map(dto, Game.class);
+        if (g.getNames() != null) {
+            g.getNames().forEach(n -> n.setGame(g));
+        }
         return mapper.map(repo.save(g), GameDto.class);
     }
 

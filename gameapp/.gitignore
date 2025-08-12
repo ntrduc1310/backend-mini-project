@@ -22,3 +22,8 @@ out/
 
 # Old resources folder (use templates/ instead)
 src/main/resources/template/
+
+# Local H2 database files
+/data/
+*.mv.db
+*.trace.db
